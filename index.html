@@ -1,0 +1,1810 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>arbi analyzer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/html-to-image@1.11.11/dist/html-to-image.js"></script>
+<style>
+  :root {
+  --bg:       #0c0c0c;
+  --bg2:      #141414;
+  --bg3:      #1e1e1e;
+  --surface:  #111111;
+  --surface2: #181818;
+  --border:   rgba(255,255,255,0.05);
+  --border2:  rgba(255,255,255,0.09);
+  --text:     #dedede;
+  --text2:    #adadad;
+  --text3:    #686868;
+  --accent:   #dedede;
+  --fast:     #34d058;
+  --slow:     #f85149;
+  --warn:     #f0b429;
+  --radius:   14px;
+  --radius-sm:8px;
+  --mono:     'DM Mono', monospace;
+  --sans:     'DM Sans', sans-serif;
+  --shadow:   0 1px 4px rgba(0,0,0,0.4), 0 4px 20px rgba(0,0,0,0.25);
+  --shadow-md:0 2px 10px rgba(0,0,0,0.5), 0 8px 36px rgba(0,0,0,0.35);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+  font-family: var(--mono);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  font-size: 14px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  }
+
+  .app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  max-width: 1060px;
+  margin: 0 auto;
+  padding: 0 clamp(12px, 4vw, 24px);
+  }
+
+  nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 22px 0 18px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 8px;
+  }
+  .nav-brand {
+  font-family: var(--mono);
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text);
+  letter-spacing: -0.02em;
+  text-decoration: none;
+  }
+  .nav-link {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--text);
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  transition: all 0.15s;
+  cursor: pointer;
+  background: none;
+  border: none;
+  text-decoration: none;
+  }
+  .nav-link:hover { background: var(--bg3); color: var(--text); }
+
+  .hero {
+  padding: 44px 0 12px;
+  text-align: center;
+  }
+  .hero-title {
+  font-family: var(--mono);
+  font-size: 15px;
+  color: var(--text5);
+  letter-spacing: 0.06em;
+  margin-bottom: 20px;
+  }
+
+  .drop-zone {
+  background: var(--surface);
+  border: 2px dashed var(--border2);
+  border-radius: var(--radius);
+  padding: 52px 32px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+  }
+  .drop-zone:hover {
+  border-color: rgba(255,255,255,0.28);
+  background: var(--surface2);
+  }
+  .drop-zone.drag-over {
+  border-color: rgba(52,208,88,0.6);
+  border-style: solid;
+  background: rgba(52,208,88,0.05);
+  box-shadow: 0 0 0 3px rgba(52,208,88,0.08), inset 0 0 32px rgba(52,208,88,0.04);
+  }
+  .drop-icon  { font-size: 30px; margin-bottom: 14px; display: block; }
+  .drop-main  { font-family: var(--mono); font-size: 15px; font-weight: 500; color: var(--text); margin-bottom: 6px; }
+  .drop-sub   { font-size: 13px; color: var(--text3); }
+  input[type="file"] { display: none; }
+
+  .log-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  margin-top: 14px;
+  padding: 14px 18px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  text-align: left;
+  }
+  .log-hint-icon { font-size: 15px; flex-shrink: 0; margin-top: 2px; }
+  .log-hint-text { font-size: 13px; color: var(--text2); line-height: 1.6; }
+  .log-hint-text strong { color: var(--text); font-weight: 500; }
+  .log-hint-text code {
+  font-family: var(--mono);
+  font-size: 12px;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  padding: 1px 7px;
+  border-radius: 4px;
+  color: var(--text);
+  user-select: all;
+  cursor: text;
+  }
+
+  .status-bar {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 11px 16px;
+  background: var(--bg2);
+  border-radius: var(--radius-sm);
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text3);
+  margin-top: 12px;
+  }
+  .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text3); flex-shrink: 0; }
+  .status-dot.active { background: var(--fast); }
+  .status-dot.pulse  { background: var(--warn); animation: pulse 1.4s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+  #results { display: none; padding-bottom: 48px; }
+
+  .section-label {
+  font-family: var(--mono);
+  font-size: 15px;
+  color: var(--text);
+  text-transform: lowercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 10px;
+  margin-top: 28px;
+  }
+
+  .stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  }
+  .stat-card {
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  padding: 13px 15px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+  position: relative;
+  }
+  .stat-card::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.07), transparent);
+  }
+  .stat-value {
+  font-family: var(--mono);
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--text);
+  letter-spacing: -0.04em;
+  line-height: 1;
+  margin-bottom: 5px;
+  }
+  .stat-value.highlight { color: var(--fast); }
+  .stat-label { font-size: 13px; color: var(--text3); line-height: 1.3; }
+
+  .mission-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  color: var(--text2);
+  font-family: var(--mono);
+  font-size: 15px;
+  padding: 5px 13px;
+  border-radius: 20px;
+  margin-bottom: 18px;
+  }
+  .mission-badge .dot { color: var(--fast); }
+
+  .panel {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 22px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+  margin-bottom: 10px;
+  }
+  
+  .panel-title {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--text3);
+  margin-bottom: 16px;
+  letter-spacing: 0.02em;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+  }
+  .panel-title-text {
+  flex: 1;
+  min-width: 0;
+  }
+
+  .vitus-input-row { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; }
+  .vitus-input-row label { font-size: 12px; color: var(--text2); white-space: nowrap; }
+  input[type="number"] {
+    width: 80px; padding: 5px 10px;
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-sm);
+    background: var(--bg3);
+    font-family: var(--mono); font-size: 13px; color: var(--text); outline: none;
+    transition: border-color 0.15s;
+    -moz-appearance: textfield;
+  }
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type="number"]:focus { border-color: rgba(255,255,255,0.3); }
+
+  .vitus-table { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 12px; font-weight: 400; }
+  .vitus-table th { text-align: left; padding: 5px 8px; color: var(--text3); font-weight: 400; border-bottom: 1px solid var(--border); }
+  .vitus-table td { padding: 6px 8px; border-bottom: 1px solid var(--border); font-weight: 400; font-size: 12px; }
+  .vitus-table tr:last-child td { border-bottom: none; }
+
+  .sat-panel { display: flex; flex-direction: column; height: 100%; }
+  .saturation-bars { width: 100%; }
+  .sat-svg { width: 100%; height: auto; display: block; }
+
+  .rounds-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  position: relative;
+  }
+  .round-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  padding: 4px 7px;
+  border-radius: 6px;
+  font-family: var(--mono);
+  cursor: default;
+  color: var(--text2);
+  }
+  .round-tile-label { font-size: 9px; margin-bottom: 2px; color: var(--text3); }
+  .round-tile-val { font-size: 11px; }
+
+  .two-col-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 8px;
+  align-items: stretch;
+  }
+  .two-col-grid > div { display: flex; flex-direction: column; }
+  .two-col-grid > div .panel { flex: 1; }
+  .panel-compact { padding: 14px 16px; }
+  .panel-compact .panel-title { margin-bottom: 10px; font-size: 13px; }
+
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; padding: 20px 0 8px; }
+  .btn { font-family: var(--mono); font-size: 13px; padding: 10px 18px; border-radius: var(--radius-sm); border: none; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; gap: 7px; }
+  .btn-ghost { background: transparent; color: var(--text); border: 1px solid var(--border2); }
+  .btn-ghost:hover { background: var(--bg3); color: var(--text); }
+  .btn-copy { background: transparent; color: var(--text); border: 1px solid var(--border2); }
+  .btn-copy:hover { background: var(--bg3); color: var(--text); border-color: rgba(255,255,255,0.2); }
+  .btn-copy.loading { opacity: 0.6; cursor: wait; }
+
+  [data-tip] { position: relative; }
+  [data-tip]::after {
+  content: attr(data-tip); position: absolute; bottom: calc(100% + 7px); left: 50%; transform: translateX(-50%);
+  background: var(--bg3); border: 1px solid var(--border2); color: var(--text);
+  font-family: var(--mono); font-size: 12px; padding: 5px 10px; border-radius: 6px;
+  white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity 0.15s; z-index: 10;
+  }
+  [data-tip]:hover::after { opacity: 1; }
+
+  footer {
+  text-align: center; padding: 32px 0 28px; font-size: 12px; color: var(--text3);
+  font-family: var(--mono); border-top: 1px solid var(--border); margin-top: 16px;
+  }
+
+  
+  .snap-footer {
+  display: none;
+  text-align: center;
+  padding: 14px 0 10px;
+  font-size: 11px;
+  color: var(--text3);
+  font-family: var(--mono);
+  border-top: 1px solid var(--border);
+  margin-top: 12px;
+  }
+
+  
+  .section-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: var(--mono);
+  font-size: 15px;
+  color: var(--text);
+  text-transform: lowercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 10px;
+  margin-top: 28px;
+  }
+  .btn-detail {
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 4px 11px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border2);
+  background: transparent;
+  color: var(--text3);
+  cursor: pointer;
+  transition: all 0.15s;
+  letter-spacing: 0.03em;
+  display: none; 
+  }
+  .btn-detail:hover { background: var(--bg3); color: var(--text2); }
+
+  .detail-cube-grid { display: flex; flex-wrap: wrap; gap: 3px; }
+  .detail-cube {
+  width: 46px;
+  height: 36px;
+  border-radius: 4px;
+  cursor: default;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--mono);
+  transition: transform .1s, border-color .1s;
+  gap: 0;
+  }
+  .detail-cube:hover { transform: scale(1.15); }
+  .detail-cube-lbl { font-size: 12px; line-height: 1; opacity: 0.65; }
+  .detail-cube-val { font-size: 12px; font-weight: 500; line-height: 1.2; }
+
+  @media (max-width: 600px) {
+  body { font-size: 13px; }
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .stat-value { font-size: 18px; }
+  .panel { padding: 14px; }
+  .panel-compact { padding: 12px 14px; }
+  .hero { padding: 28px 0 10px; }
+  .drop-zone { padding: 36px 20px; }
+  .vitus-table th, .vitus-table td { padding: 5px 6px; font-size: 11px; }
+  .sat-kpi-row { grid-template-columns: repeat(2, 1fr); }
+  .sat-kpi-val { font-size: 13px; }
+  }
+
+  @media (max-width: 360px) {
+  body { font-size: 12px; }
+  .stats-grid { grid-template-columns: 1fr; }
+  .stat-value { font-size: 16px; }
+  .sat-row { font-size: 13px; gap: 4px; }
+  .section-label { margin-top: 20px; }
+  .sat-kpi-row { grid-template-columns: 1fr; }
+  }
+
+  
+  .sat-kpi-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 10px;
+  }
+  .sat-kpi-item {
+  display: flex; flex-direction: column; gap: 4px;
+  justify-content: space-between;
+  padding: 10px 13px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  min-width: 0;
+  }
+  .sat-kpi-label {
+  font-size: 11px; color: var(--text3);
+  letter-spacing: 0.02em; text-transform: lowercase;
+  line-height: 1.3;
+  }
+  .sat-kpi-val {
+  font-family: var(--mono); font-size: 13px; font-weight: 500;
+  color: var(--text); letter-spacing: -0.02em; line-height: 1;
+  }
+  .sat-kpi-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  align-self: flex-start;
+  font-family: var(--mono); font-size: 16px; font-weight: 500;
+  color: var(--fast);
+  background: rgba(52,208,88,0.1);
+  border: 1px solid rgba(52,208,88,0.28);
+  border-radius: 5px;
+  padding: 2px 10px;
+  letter-spacing: 0.01em;
+  line-height: 1;
+  }
+
+  
+  .sat-legend-row {
+  display: flex; gap: 12px; justify-content: center;
+  margin-top: 7px; font-size: 12px; color: var(--text3);
+  align-items: center;
+  }
+  .sat-legend-dot {
+  display: inline-block; width: 8px; height: 8px;
+  border-radius: 2px; margin-right: 4px;
+  vertical-align: middle; flex-shrink: 0;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <nav>
+  <a class="nav-brand" href="#">arbi analyzer</a>
+  <button class="nav-link" id="btn-nav-reset">reset</button>
+  </nav>
+
+  <div class="hero">
+  <div class="hero-title">warframe arbitration run analyzer</div>
+
+  <div class="drop-zone" id="dropZone">
+    <input type="file" id="fileInput" accept=".log">
+    <span class="drop-icon">📄</span>
+    <div class="drop-main">drag & drop EE.log</div>
+    <div class="drop-sub">or click to browse &nbsp;·&nbsp; upload the <strong>host's</strong> log</div>
+  </div>
+
+  <div class="log-hint">
+    <span class="log-hint-icon">💡</span>
+    <div class="log-hint-text">
+    <strong>where is EE.log?</strong>
+    press <code>Win+R</code> and paste <code>%localappdata%\Warframe</code> — the log file will be right there.
+    warframe deletes it every time you relaunch, so grab it right after your run.
+    </div>
+  </div>
+
+  <div class="status-bar">
+    <span class="status-dot" id="statusDot"></span>
+    <span id="statusText">waiting for file...</span>
+  </div>
+  </div>
+
+  <div id="results">
+
+  <div id="missionBadge" class="mission-badge">
+    <span class="dot">●</span>
+    <span id="missionName">Arbitration</span>
+  </div>
+
+  <div class="section-label">core metrics</div>
+  <div class="stats-grid">
+    <div class="stat-card" data-tip="total enemies that spawned">
+    <div class="stat-value" id="totalEnemies">0</div>
+    <div class="stat-label">enemies spawned</div>
+    </div>
+    <div class="stat-card" data-tip="enemies spawned per drone killed">
+    <div class="stat-value" id="killsPerDrone">0.00</div>
+    <div class="stat-label">kills per drone</div>
+    </div>
+    <div class="stat-card" data-tip="average time between drone spawns">
+    <div class="stat-value" id="avgDroneInterval">—</div>
+    <div class="stat-label">avg drone interval</div>
+    </div>
+    <div class="stat-card" data-tip="drones killed as recorded in EE.log">
+    <div class="stat-value" id="dronesKilled">0</div>
+    <div class="stat-label">drones killed</div>
+    </div>
+    <div class="stat-card" data-tip="estimated Vitus Essence earned per minute">
+    <div class="stat-value highlight" id="vitusPerMin">—</div>
+    <div class="stat-label">vitus per minute</div>
+    </div>
+    <div class="stat-card" data-tip="total run duration from log">
+    <div class="stat-value" id="totalDuration">—</div>
+    <div class="stat-label">total duration</div>
+    </div>
+  </div>
+
+  <div class="two-col-grid">
+    <div>
+    <div class="section-label">expected vitus probability</div>
+    <div class="panel panel-compact">
+      <div class="panel-title"><span class="panel-title-text">assuming 100% pickup · all buffs · retriever mod active</span></div>
+      <div class="vitus-input-row">
+      <label>actual vitus collected:</label>
+      <input type="number" id="actualVitus" min="0" placeholder="0">
+      <span id="vitusPercentileLabel" style="font-size:12px;color:var(--text3);white-space:nowrap;"></span>
+      </div>
+      <table class="vitus-table">
+      <thead><tr><th>chance</th><th>total vitus</th><th>luck level</th></tr></thead>
+      <tbody id="vitusTableBody">
+        <tr><td colspan="3" style="color:var(--text3);padding:8px 10px;">load a run to see probabilities</td></tr>
+      </tbody>
+      </table>
+    </div>
+    </div>
+    <div>
+    <div class="section-label">enemy saturation</div>
+    <div class="panel panel-compact sat-panel">
+      <div class="panel-title">
+        <span class="panel-title-text">engagement scale</span>
+      </div>
+      <div class="saturation-bars" id="saturationBars"></div>
+    </div>
+    </div>
+  </div>
+
+  <div class="two-col-grid" id="dpmRotationGrid">
+    <div>
+    <div class="section-label">drones per minute</div>
+    <div class="panel panel-compact">
+      <div class="panel-title" id="dpmPanelTitle"><span class="panel-title-text">DPM per rotation · avg shown as dashed line</span></div>
+      <div class="intervals-list" id="intervalsList"></div>
+    </div>
+    </div>
+    <div>
+    <div class="section-label-row">
+      <span>drones per rotation</span>
+      <button class="btn-detail" id="btn-drones-detail">more details →</button>
+    </div>
+    <div class="panel panel-compact">
+      <div class="rounds-list" id="roundsList"></div>
+    </div>
+    </div>
+  </div>
+
+  
+  <div id="dronesDetailPanel" style="display:none;">
+    <div class="section-label-row" style="margin-top:28px;">
+    <span>drones per rotation · detailed</span>
+    <button class="btn-detail" id="btn-drones-back" style="display:inline-flex;">← back</button>
+    </div>
+    <div class="panel panel-compact">
+    <div id="dronesDetailContent"></div>
+    </div>
+    <div class="section-label" style="margin-top:20px;">drones per minute</div>
+    <div class="panel panel-compact">
+    <div class="panel-title" id="dpmDetailPanelTitle"><span class="panel-title-text">DPM per rotation · avg shown as dashed line</span></div>
+    <div id="dpmDetailGraph"></div>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="btn btn-copy" id="btn-copy-img">⛶ copy image</button>
+    <button class="btn btn-ghost" id="btn-reset">↺ reset</button>
+  </div>
+
+  </div>
+
+  <footer>arbi analyzer · all processing is local — your log is never uploaded</footer>
+</div>
+
+<script>
+
+const DROP_CHANCE      = 0.15;
+const RETRIEVER_CHANCE = 0.18;
+const SCENARIOS = [
+  { z: -2.326, prob: "99%", desc: "worst case"  },
+  { z: -1.282, prob: "90%", desc: "unlucky"     },
+  { z: -0.674, prob: "75%", desc: "below avg"   },
+  { z:  0.000, prob: "50%", desc: "average"     },
+  { z:  0.674, prob: "25%", desc: "above avg"   },
+  { z:  1.282, prob: "10%", desc: "high roll"   },
+  { z:  2.326, prob:  "1%", desc: "god roll"    }
+];
+const MIRROR_DEFENSE_MAPS = ['Munio', 'Tyana'];
+const FORCED_VALID_AGENTS = new Set(["CorpusEliteShieldDroneAgent"]);
+
+let runData = null;
+const dropZone   = document.getElementById('dropZone');
+const fileInput  = document.getElementById('fileInput');
+const statusDot  = document.getElementById('statusDot');
+const statusText = document.getElementById('statusText');
+const results    = document.getElementById('results');
+
+dropZone.addEventListener('click', () => fileInput.click());
+let dragCounter = 0;
+dropZone.addEventListener('dragenter', e => { e.preventDefault(); dragCounter++; dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => { dragCounter--; if (dragCounter <= 0) { dragCounter = 0; dropZone.classList.remove('drag-over'); } });
+dropZone.addEventListener('dragover',  e => e.preventDefault());
+dropZone.addEventListener('drop', e => {
+  e.preventDefault(); dragCounter = 0; dropZone.classList.remove('drag-over');
+  const f = e.dataTransfer.files[0]; if (f) processFile(f);
+});
+fileInput.addEventListener('change', e => { if (e.target.files[0]) processFile(e.target.files[0]); });
+
+function setStatus(cls, text) {
+  statusDot.className = 'status-dot' + (cls ? ' ' + cls : '');
+  statusText.textContent = text;
+}
+
+function processFile(file) {
+  setStatus('pulse', 'parsing log...');
+  parseFileStream(file).then(stats => {
+  runData = stats;
+  renderResults(stats);
+  setStatus('active', 'loaded: ' + file.name);
+  }).catch(err => {
+  setStatus('', 'error parsing log — is this a valid EE.log?');
+  console.error(err);
+  });
+}
+
+async function parseFileStream(file) {
+  const CHUNK_SIZE = 1024 * 1024 * 10;
+  let lastYieldTime = performance.now();
+  let offset = 0, leftover = "";
+  let sessions = [];
+
+  const createStats = () => ({
+  droneKills: 0, enemySpawns: 0, rounds: 0,
+  isDefense: false, isInterception: false,
+  droneTimestamps: [], rewardTimestamps: [],
+  waveStarts: {}, waveEnds: [], waveCountdowns: [],
+  liveCounts: [], pauseIntervals: [],
+  lastRewardTime: 0, missionName: "Unknown Node",
+  hasData: false, lastActivityTime: 0,
+  currentPauseStart: null, currentSimCap: 32,
+  preciseStartTime: null, allSpawns: []
+  });
+
+  let current = createStats();
+
+  const p_overlay     = /Script \[Info\]: ThemedSquadOverlay\.lua: Mission name: (.*)/;
+  const p_agent       = /OnAgentCreated/;
+  const p_agent_full  = /OnAgentCreated.*?\/Npc\/(.+?)(\d+)\s+.*?MonitoredTicking\s+(\d+)/;
+  const p_drone       = /OnAgentCreated.*?CorpusEliteShieldDroneAgent/;
+  const p_excludedAgents = /(Replicant|RJCrew|petavatar|VoidClone|Turret|Dropship|CatbrowPetAgent|AllyAgent)/i;
+  const p_reward_def  = /Sys \[Info\]: Created \/Lotus\/Interface\/DefenseReward\.swf/;
+  const p_sleep       = /WaveDefend\.lua: _SleepBetweenWaves/;
+  const p_waveStart   = /WaveDefend\.lua: Starting wave (\d+)/;
+  const p_waveSleep3  = /WaveDefend\.lua: _SleepBetweenWaves\(3\)/;
+  const p_countdown   = /\/Lotus\/Interface\/ProjectionsCountdown\.swf/;
+  const p_interception_start = /Script \[Info\]: TerritoryMission\.lua/;
+  const p_waveCap     = /WaveDefend\.lua: Starting wave \d+.*?\((\d+) simultaneous/;
+  const p_monitored   = /AI \[Info\]: .*?MonitoredTicking (\d+)/;
+  const p_defWave     = /WaveDefend\.lua: Defense wave: 1/;
+  const p_waveDef     = /^[^\d]*(\d+\.\d+).*WaveDefend\.lua: Defense wave: (\d+)/;
+  const p_timestamp   = /^[^\d]*(\d+\.\d+)/;
+  const p_defStart1   = /WaveDefend\.lua: Defense wave: 1/;
+  const p_intStartInit= /Script \[Info\]: TerritoryMission\.lua: .*?(?:control|captured|Control|Captured)/;
+
+  while (offset < file.size) {
+  const slice = file.slice(offset, offset + CHUNK_SIZE);
+  const text  = await slice.text();
+  const currentData = leftover + text;
+  let lastIdx = currentData.lastIndexOf('\n');
+  if (offset + CHUNK_SIZE >= file.size && lastIdx === -1) lastIdx = currentData.length;
+
+  const chunk   = lastIdx !== -1 ? currentData.substring(0, lastIdx) : "";
+  leftover = lastIdx !== -1 ? currentData.substring(lastIdx + 1) : currentData;
+
+  const lines = chunk.split(/\r?\n/);
+  for (let line of lines) {
+    if (!line) continue;
+    if (line.includes("Game [Warning]:") || line.includes("DamagePct")) continue;
+
+    let timestamp = 0;
+    const tsM = line.match(p_timestamp);
+    if (tsM) timestamp = parseFloat(tsM[1]);
+
+    const mMission = line.match(p_overlay);
+    if (mMission) {
+    let name = mMission[1].trim();
+    if (name.includes("Arbitration")) {
+      if (timestamp > 0 && current.lastActivityTime > 0 && timestamp < current.lastActivityTime) continue;
+      if (current.hasData || current.missionName !== "Unknown Node") sessions.push(current);
+      current = createStats();
+      current.missionName = name.replace("Arbitration:", "").trim();
+      const nl = current.missionName.toLowerCase();
+      if (nl.includes('defense')) current.isDefense = true;
+      else if (nl.includes('interception')) current.isInterception = true;
+      if (!current.isDefense && MIRROR_DEFENSE_MAPS.some(m => nl.includes(m.toLowerCase()))) current.isDefense = true;
+      if (timestamp) current.lastActivityTime = timestamp;
+    }
+    continue;
+    }
+
+    if (p_sleep.test(line) || p_reward_def.test(line)) {
+    if (current.currentPauseStart === null && timestamp > 0) current.currentPauseStart = timestamp;
+    }
+    let isUnpause = false;
+    if (current.isDefense && p_waveStart.test(line)) isUnpause = true;
+    if (p_interception_start.test(line)) { current.isInterception = true; isUnpause = true; }
+    if (isUnpause && current.currentPauseStart !== null && timestamp > 0) {
+    current.pauseIntervals.push({ start: current.currentPauseStart, end: timestamp });
+    current.currentPauseStart = null;
+    }
+
+    if (current.preciseStartTime === null) {
+    if (p_defStart1.test(line)) current.preciseStartTime = timestamp;
+    else if (p_intStartInit.test(line)) { current.preciseStartTime = timestamp; current.isInterception = true; }
+    }
+
+    if (p_reward_def.test(line)) {
+    if (timestamp - current.lastRewardTime > 30) {
+      current.rounds++;
+      current.hasData = true;
+      current.lastRewardTime = timestamp;
+      current.rewardTimestamps.push(timestamp);
+      current.lastActivityTime = Math.max(current.lastActivityTime, timestamp);
+      if (current.currentPauseStart === null) current.currentPauseStart = timestamp;
+    }
+    }
+
+    const mCap = line.match(p_waveCap);
+    if (mCap) current.currentSimCap = parseInt(mCap[1]);
+
+    const mMonitored = line.match(p_monitored);
+    if ((current.isDefense || current.isInterception) && mMonitored && timestamp) {
+    current.liveCounts.push({ t: timestamp, val: parseInt(mMonitored[1]), cap: current.currentSimCap });
+    }
+
+    if (p_drone.test(line)) {
+    current.droneKills++;
+    current.hasData = true;
+    if (timestamp) { current.droneTimestamps.push(timestamp); current.lastActivityTime = Math.max(current.lastActivityTime, timestamp); }
+    } else if (p_agent.test(line)) {
+    if (p_excludedAgents.test(line)) continue;
+    current.enemySpawns++;
+    const mFull = line.match(p_agent_full);
+    if (mFull) {
+      const tick = parseInt(mFull[3]);
+      current.allSpawns.push({ name: mFull[1], tick: isNaN(tick) ? null : tick });
+    } else {
+      const mNpc = line.match(/\/Npc\/([A-Za-z0-9_]+)/);
+      current.allSpawns.push({ name: mNpc ? mNpc[1] : null, tick: null });
+    }
+    }
+
+    if (p_defWave.test(line)) current.isDefense = true;
+    const mWave = line.match(p_waveDef);
+    if (mWave && timestamp) { current.waveStarts[parseInt(mWave[2])] = timestamp; current.lastActivityTime = Math.max(current.lastActivityTime, timestamp); }
+    if (p_waveSleep3.test(line) && timestamp) current.waveEnds.push(timestamp);
+    if (p_countdown.test(line) && timestamp) current.waveCountdowns.push(timestamp);
+  }
+
+  offset += CHUNK_SIZE;
+  const pct = Math.min(100, (offset / file.size) * 100).toFixed(0);
+  setStatus('pulse', `analyzing... ${pct}%`);
+  if (performance.now() - lastYieldTime > 30) { await new Promise(r => setTimeout(r, 0)); lastYieldTime = performance.now(); }
+  }
+
+  if (current.hasData || current.missionName !== "Unknown Node") sessions.push(current);
+
+  let bestSession = null;
+  for (let i = sessions.length - 1; i >= 0; i--) {
+  if (sessions[i].rounds > 0 && sessions[i].droneKills > 20) { bestSession = sessions[i]; break; }
+  }
+  const chosen = bestSession || sessions[sessions.length - 1] || createStats();
+
+  try {
+  const _lc = chosen.liveCounts.slice();
+  if (chosen.allSpawns.length > 0) {
+    const named = chosen.allSpawns.filter(s => s.name != null);
+    const confirmedTicking = new Set(), suspectedNonTicking = new Set();
+    for (let i = 1; i < named.length; i++) {
+    const prev = named[i-1], curr = named[i];
+    if (prev.tick !== null && curr.tick !== null) {
+      if (curr.tick > prev.tick) confirmedTicking.add(prev.name);
+      else suspectedNonTicking.add(prev.name);
+    }
+    }
+    const trueNonTicking = new Set(
+    Array.from(suspectedNonTicking).filter(x => !confirmedTicking.has(x) && !FORCED_VALID_AGENTS.has(x))
+    );
+    let validSpawns = 0;
+    for (const sp of chosen.allSpawns) { if (!sp.name || !trueNonTicking.has(sp.name)) validSpawns++; }
+    chosen.enemySpawns = validSpawns;
+    chosen.trueNonTickingAgents = Array.from(trueNonTicking);
+  }
+  chosen.liveCounts = _lc;
+  } catch(e) { console.warn('Non-ticking filter failed:', e); }
+
+  if (chosen.preciseStartTime !== null && chosen.droneTimestamps.length > 0) {
+  chosen.startTime = chosen.preciseStartTime;
+  }
+  return chosen;
+}
+
+function formatTime(sec) {
+  if (!sec || sec <= 0) return '—';
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = Math.floor(sec % 60);
+  if (h > 0) return h + 'h ' + m + 'm ' + s + 's';
+  return m > 0 ? m + 'm ' + s + 's' : s + 's';
+}
+
+function getNormalCDF(x, mean, std) {
+  const z = (x - mean) / std;
+  let t = 1 / (1 + 0.2316419 * Math.abs(z));
+  let d = 0.3989423 * Math.exp(-z * z / 2);
+  let p = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274))));
+  if (z > 0) p = 1 - p;
+  return p;
+}
+
+function lerpColor(t) {
+  if (t < 0.5) {
+  const u = t * 2;
+  return `rgb(${Math.round(0xf8+(0xf0-0xf8)*u)},${Math.round(0x51+(0xb4-0x51)*u)},${Math.round(0x49+(0x29-0x49)*u)})`;
+  } else {
+  const u = (t - 0.5) * 2;
+  return `rgb(${Math.round(0xf0+(0x34-0xf0)*u)},${Math.round(0xb4+(0xd0-0xb4)*u)},${Math.round(0x29+(0x58-0x29)*u)})`;
+  }
+}
+
+function vitusStats(droneKills, rounds) {
+  const p = DROP_CHANCE;
+  const meanVal    = (4 * RETRIEVER_CHANCE) + (2 * (1 - RETRIEVER_CHANCE));
+  const expectValSq= (16 * RETRIEVER_CHANCE) + (4 * (1 - RETRIEVER_CHANCE));
+  const varVal     = expectValSq - Math.pow(meanVal, 2);
+  const rotTotalMean = rounds + (rounds * 0.10 * 3);
+  const rotVar     = rounds * 0.10 * (1 - 0.10) * 9;
+  const meanDrops  = droneKills * p;
+  const varDrops   = droneKills * p * (1 - p);
+  const grandMean  = rotTotalMean + meanDrops * meanVal;
+  const grandStd   = Math.sqrt(rotVar + (meanDrops * varVal) + (Math.pow(meanVal, 2) * varDrops));
+  return { grandMean, grandStd };
+}
+
+function renderResults(d) {
+  results.style.display = 'block';
+
+  const totalEnemies = d.enemySpawns + d.droneKills;
+  const startTime    = d.startTime || d.droneTimestamps[0] || 0;
+  const totalSec     = Math.max(0, (d.lastActivityTime || 0) - startTime);
+
+  document.getElementById('missionName').textContent       = d.missionName;
+  document.getElementById('totalEnemies').textContent      = totalEnemies.toLocaleString();
+  document.getElementById('killsPerDrone').textContent     = d.droneKills > 0 ? (totalEnemies / d.droneKills).toFixed(2) : '—';
+  document.getElementById('dronesKilled').textContent      = d.droneKills.toLocaleString();
+  document.getElementById('totalDuration').textContent     = formatTime(totalSec);
+  document.getElementById('vitusPerMin').textContent       = '—';
+
+  let avgInt = 0;
+  if (d.droneTimestamps.length > 1) {
+  let ivs = [];
+  for (let i = 1; i < d.droneTimestamps.length; i++) ivs.push(d.droneTimestamps[i] - d.droneTimestamps[i-1]);
+  avgInt = ivs.reduce((a,b)=>a+b,0) / ivs.length;
+  }
+  document.getElementById('avgDroneInterval').textContent = avgInt > 0 ? avgInt.toFixed(2) + 's' : '—';
+
+  renderVitusTable(d);
+  renderSaturation(d);
+  renderDronesPerRotation(d);
+  
+  requestAnimationFrame(() => {
+  renderDPMGraph(d);
+
+  if (window._resizeObs) window._resizeObs.disconnect();
+  window._resizeObs = new ResizeObserver(() => {
+    if (!runData) return;
+    renderDPMGraph(runData);
+    if (document.getElementById('dronesDetailPanel').style.display !== 'none') {
+    renderDPMGraph(runData, 'dpmDetailGraph', 'dpmDetailPanelTitle');
+    }
+  });
+  const graphContainer  = document.getElementById('intervalsList');
+  const roundsContainer = document.getElementById('roundsList');
+  const detailContainer = document.getElementById('dpmDetailGraph');
+  if (graphContainer)  window._resizeObs.observe(graphContainer);
+  if (roundsContainer) window._resizeObs.observe(roundsContainer);
+  if (detailContainer) window._resizeObs.observe(detailContainer);
+  });
+
+  document.getElementById('actualVitus').addEventListener('input', () => {
+  if (!runData) return;
+  renderVitusTable(runData);
+  const val = parseFloat(document.getElementById('actualVitus').value);
+  if (!isNaN(val) && totalSec > 0) {
+    document.getElementById('vitusPerMin').textContent = (val / (totalSec / 60)).toFixed(2) + '/m';
+  } else {
+    document.getElementById('vitusPerMin').textContent = '—';
+  }
+  });
+}
+
+function renderVitusTable(d) {
+  const tbody  = document.getElementById('vitusTableBody');
+  const actual = parseFloat(document.getElementById('actualVitus').value);
+  if (!d.droneKills) {
+  tbody.innerHTML = '<tr><td colspan="3" style="color:var(--text3);padding:14px 12px;">no drones detected in log</td></tr>';
+  return;
+  }
+  const { grandMean, grandStd } = vitusStats(d.droneKills, d.rounds);
+
+  
+  const lbl = document.getElementById('vitusPercentileLabel');
+  let activeIdx = -1;
+  if (!isNaN(actual)) {
+  const pct = getNormalCDF(actual, grandMean, grandStd);
+  const pctNum = pct * 100;
+  if (pct >= 0.99)       activeIdx = 6;
+  else if (pct >= 0.90)  activeIdx = 5;
+  else if (pct >= 0.75)  activeIdx = 4;
+  else if (pct > 0.25)   activeIdx = 3;
+  else if (pct > 0.10)   activeIdx = 2;
+  else if (pct > 0.01)   activeIdx = 1;
+  else                   activeIdx = 0;
+  const percentileStr = pct > 0.5
+    ? `top ${(100 - pctNum).toFixed(1)}%`
+    : `bottom ${pctNum.toFixed(1)}%`;
+  const col = lerpColor(pct);
+  const colFaint  = col.replace('rgb(', 'rgba(').replace(')', ',0.12)');
+  const colBorder = col.replace('rgb(', 'rgba(').replace(')', ',0.35)');
+  if (lbl) {
+    lbl.textContent = percentileStr;
+    lbl.style.cssText = `display:inline-flex;align-items:center;vertical-align:middle;background:${colFaint};border:1px solid ${colBorder};color:${col};border-radius:5px;padding:2px 8px;font-size:12px;white-space:nowrap;transition:background 0.3s,border-color 0.3s,color 0.3s;`;
+  }
+  } else {
+  if (lbl) { lbl.textContent = ''; lbl.style.cssText = ''; }
+  }
+
+  tbody.innerHTML = SCENARIOS.map((sc, i) => {
+  const score = Math.round(grandMean + sc.z * grandStd);
+  if (i === activeIdx) {
+    const pct = getNormalCDF(actual, grandMean, grandStd);
+    const col = lerpColor(pct);
+    const colFaint  = col.replace('rgb(', 'rgba(').replace(')', ',0.15)');
+    const colBorder = col.replace('rgb(', 'rgba(').replace(')', ',0.40)');
+    return `<tr>
+    <td>${sc.prob}</td>
+    <td>${score.toLocaleString()}</td>
+    <td style="color:${col};">${sc.desc}</td>
+    </tr>`;
+  }
+  return `<tr><td>${sc.prob}</td><td>${score.toLocaleString()}</td><td>${sc.desc}</td></tr>`;
+  }).join('');
+}
+
+function renderSaturation(d) {
+  const c = document.getElementById('saturationBars');
+  c.innerHTML = '';
+  if (!d.liveCounts || d.liveCounts.length < 2) {
+  c.innerHTML = '<div style="color:var(--text3)">no live enemy count data in log</div>';
+
+  return;
+  }
+
+  const startTime = d.startTime || d.droneTimestamps[0] || 0;
+  const endTime   = d.lastActivityTime || 0;
+  const STEP = 3, MAX_VAL = 30;
+  const NUM_BUCKETS = Math.ceil(MAX_VAL / STEP);
+  let buckets = new Array(NUM_BUCKETS).fill(0);
+  let totalTime = 0, sat15 = 0;
+
+  for (let i = 0; i < d.liveCounts.length - 1; i++) {
+  const cur  = d.liveCounts[i];
+  const next = d.liveCounts[i + 1];
+  const segStart = Math.max(cur.t, startTime);
+  const segEnd   = Math.min(next.t, endTime);
+  let duration   = segEnd - segStart;
+  if (duration <= 0 || duration > 29) continue;
+  let isPaused = false;
+  if (d.pauseIntervals) {
+    for (const pause of d.pauseIntervals) {
+    if ((segStart < pause.start && segEnd > pause.end) ||
+      (segStart >= pause.start && segStart < pause.end)) { isPaused = true; break; }
+    }
+  }
+  if (isPaused) continue;
+  let bi = Math.min(Math.floor(cur.val / STEP), NUM_BUCKETS - 1);
+  buckets[bi] += duration;
+  totalTime   += duration;
+  if (cur.val >= 15) sat15 += duration;
+  }
+
+  const sat15pct = totalTime > 0 ? (sat15/totalTime*100) : 0;
+  
+  const colorStops = [
+    [52,200,82],[96,196,66],[140,186,52],[178,176,44],[210,168,41],
+    [232,172,40],[244,105,52],[247,88,63],[248,82,70],[248,81,73],
+  ];
+  const pcts = buckets.map(dur => totalTime > 0 ? (dur / totalTime * 100) : 0);
+  const maxPct = Math.max(...pcts, 1);
+  const weightedMean = pcts.reduce((sum, p, i) => sum + p * (i * STEP + STEP/2), 0) / 100;
+
+  
+  const peakBucketIdx = pcts.indexOf(Math.max(...pcts));
+  const peakBucketDur = buckets[peakBucketIdx];
+  const peakMin = Math.floor(peakBucketDur / 60);
+  const peakSec = Math.floor(peakBucketDur % 60);
+  const peakTimeStr = peakMin > 0 ? `${peakMin}m ${peakSec}s` : `${peakSec}s`;
+
+  
+  const colorStops15 = [
+    [52,200,82],[96,196,66],[140,186,52],[178,176,44],[210,168,41],
+    [232,172,40],[244,105,52],[247,88,63],[248,82,70],[248,81,73],
+  ];
+  const t15 = Math.min(1, sat15pct / 30);
+  const fi15 = t15 * (colorStops15.length - 1);
+  const lo15 = Math.floor(fi15), hi15 = Math.min(lo15 + 1, colorStops15.length - 1);
+  const mix15 = fi15 - lo15;
+  const [br, bg, bb] = colorStops15[lo15].map((v, j) => Math.round(v + (colorStops15[hi15][j] - v) * mix15));
+  const badgeColor  = `rgb(${br},${bg},${bb})`;
+  const badgeBg     = `rgba(${br},${bg},${bb},0.12)`;
+  const badgeBorder = `rgba(${br},${bg},${bb},0.35)`;
+
+  const kpi = document.createElement('div');
+  kpi.className = 'sat-kpi-row';
+  kpi.innerHTML = `
+    <div class="sat-kpi-item">
+      <span class="sat-kpi-label">avg enemies</span>
+      <span class="sat-kpi-val">${weightedMean.toFixed(1)}</span>
+    </div>
+    <div class="sat-kpi-item">
+      <span class="sat-kpi-label">peak time</span>
+      <span class="sat-kpi-val">${peakTimeStr}</span>
+    </div>
+    <div class="sat-kpi-item" style="background:${badgeBg};border-color:${badgeBorder}">
+      <span class="sat-kpi-label" style="color:var(--text2)">15+ enemy time&nbsp;%</span>
+      <span class="sat-kpi-val" style="color:${badgeColor}">${sat15pct.toFixed(1)}%</span>
+    </div>`;
+  c.appendChild(kpi);
+
+  
+  const W = 400, H = 140;
+  const padL = 0, padR = 0, padT = 18, padB = 24;
+  const chartW = W - padL - padR;
+  const chartH = H - padT - padB;
+  const n = buckets.length;
+  const bGap = 3;
+  const bW = (chartW - bGap * (n - 1)) / n;
+
+  let svgParts = [];
+
+  
+  
+  const zone1End = padL + 5 * (bW + bGap) - bGap / 2;
+  const zone2End = padL + 8 * (bW + bGap) - bGap / 2;
+  svgParts.push(`
+    <rect x="${padL}" y="${padT}" width="${zone1End - padL}" height="${chartH}" fill="rgba(52,200,82,0.03)" rx="0"/>
+    <rect x="${zone1End}" y="${padT}" width="${zone2End - zone1End}" height="${chartH}" fill="rgba(240,180,41,0.03)" rx="0"/>
+    <rect x="${zone2End}" y="${padT}" width="${W - padR - zone2End}" height="${chartH}" fill="rgba(248,81,73,0.03)" rx="0"/>
+  `);
+
+  
+  buckets.forEach((dur, i) => {
+    const pct = pcts[i];
+    const [cr,cg,cb] = colorStops[Math.min(i, colorStops.length-1)];
+    const bH = Math.max(pct > 0 ? 2 : 0, (pct / maxPct) * chartH);
+    const x = padL + i * (bW + bGap);
+    const y = padT + chartH - bH;
+    const fillOp = pct > 20 ? 0.85 : pct > 5 ? 0.72 : 0.55;
+
+    svgParts.push(`<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bW.toFixed(1)}" height="${bH.toFixed(1)}" fill="rgba(${cr},${cg},${cb},${fillOp})" rx="2"/>`);
+
+    const labelStr = pct >= 1 ? pct.toFixed(0) + '%' : pct >= 0.1 ? pct.toFixed(1) + '%' : '';
+    if (labelStr) {
+      const labelColor = pct > 20 ? `rgb(${cr},${cg},${cb})` : pct > 5 ? '#adadad' : '#686868';
+      const labelFW = pct > 20 ? '500' : '400';
+      svgParts.push(`<text x="${(x + bW/2).toFixed(1)}" y="${(y - 3).toFixed(1)}" font-size="9" font-family="'DM Mono',monospace" fill="${labelColor}" font-weight="${labelFW}" text-anchor="middle">${labelStr}</text>`);
+    }
+
+    const start = i * STEP;
+    const lblText = i === n - 1 ? start + '+' : `${start}–${start + STEP - 1}`;
+    svgParts.push(`<text x="${(x + bW/2).toFixed(1)}" y="${(padT + chartH + 13).toFixed(1)}" font-size="9" font-family="'DM Mono',monospace" fill="#686868" text-anchor="middle">${lblText}</text>`);
+  });
+
+  
+  svgParts.push(`<line x1="${padL}" y1="${padT + chartH}" x2="${W - padR}" y2="${padT + chartH}" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>`);
+
+  const svgWrap = document.createElement('div');
+  svgWrap.innerHTML = `<svg class="sat-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">${svgParts.join('')}</svg>`;
+  c.appendChild(svgWrap);
+
+  
+  const legend = document.createElement('div');
+  legend.className = 'sat-legend-row';
+  legend.innerHTML = `
+    <span><span class="sat-legend-dot" style="background:rgba(52,200,82,0.8)"></span>sparse</span>
+    <span><span class="sat-legend-dot" style="background:rgba(210,168,41,0.8)"></span>moderate</span>
+    <span><span class="sat-legend-dot" style="background:rgba(248,81,73,0.8)"></span>dense</span>`;
+  c.appendChild(legend);
+}
+
+function renderDronesPerRotation(d) {
+  const c = document.getElementById('roundsList');
+  c.innerHTML = '';
+  if (!d.rewardTimestamps || d.rewardTimestamps.length === 0) {
+  c.innerHTML = '<div style="color:var(--text3);padding:8px 0">no rotation data — reward timestamps not found</div>';
+  return;
+  }
+
+  let dronesPerRound = [], dIdx = 0;
+  for (let r = 0; r < d.rewardTimestamps.length; r++) {
+  let endT = d.rewardTimestamps[r], count = 0;
+  while (dIdx < d.droneTimestamps.length && d.droneTimestamps[dIdx] <= endT) { count++; dIdx++; }
+  dronesPerRound.push(count);
+  }
+  const mx = Math.max(...dronesPerRound), mn = Math.min(...dronesPerRound);
+  const range = mx - mn || 1;
+
+  c.style.position = 'relative';
+
+  const tip = document.createElement('div');
+  tip.style.cssText = `
+  position:absolute;pointer-events:none;visibility:hidden;z-index:999;
+  background:#1e1e1e;border:1px solid rgba(255,255,255,0.09);
+  border-radius:5px;padding:4px 9px;font-family:var(--mono);
+  font-size:12px;color:var(--text2);white-space:nowrap;
+  `;
+  c.appendChild(tip);
+
+  const showTip = (e, text) => {
+  const rect = c.getBoundingClientRect();
+  tip.textContent = text;
+  tip.style.left = (e.clientX - rect.left + 10) + 'px';
+  tip.style.top  = (e.clientY - rect.top  - 30) + 'px';
+  tip.style.visibility = 'visible';
+  };
+  const hideTip = () => { tip.style.visibility = 'hidden'; };
+
+  
+  const droneSection = document.createElement('div');
+
+  const droneLabel = document.createElement('div');
+  droneLabel.style.cssText = 'font-size:13px;color:var(--text3);letter-spacing:0.03em;margin-bottom:6px;display:flex;flex-direction:column;gap:2px;';
+  droneLabel.innerHTML = `
+  <span>drone kills per round · red (lowest) → green (highest)</span>
+  <span style="color:var(--text2);font-size:12px;white-space:nowrap;">${dronesPerRound.length} rotations · avg ${(dronesPerRound.reduce((a,b)=>a+b,0)/dronesPerRound.length).toFixed(1)}/r</span>
+  `;
+  droneSection.appendChild(droneLabel);
+
+  const droneGrid = document.createElement('div');
+  droneGrid.style.cssText = 'display:flex;flex-wrap:wrap;gap:2px;';
+
+  dronesPerRound.forEach((v, i) => {
+  const t = (v - mn) / range;
+  const col = lerpColor(t);
+  const sq = document.createElement('div');
+  sq.style.cssText = `
+    width:18px;height:18px;border-radius:3px;cursor:default;flex-shrink:0;
+    background:${col.replace('rgb(', 'rgba(').replace(')', ',0.25)')};
+    border:1px solid ${col.replace('rgb(', 'rgba(').replace(')', ',0.45)')};
+    transition:transform .1s,border-color .1s;
+  `;
+  sq.addEventListener('mouseenter', e => {
+    sq.style.transform = 'scale(1.5)';
+    sq.style.borderColor = col.replace('rgb(', 'rgba(').replace(')', ',0.9)');
+    showTip(e, `rotation #${i + 1}  ·  ${v} drones`);
+  });
+  sq.addEventListener('mousemove', e => showTip(e, `rotation #${i + 1}  ·  ${v} drones`));
+  sq.addEventListener('mouseleave', () => {
+    sq.style.transform = '';
+    sq.style.borderColor = col.replace('rgb(', 'rgba(').replace(')', ',0.45)');
+    hideTip();
+  });
+  droneGrid.appendChild(sq);
+  });
+  droneSection.appendChild(droneGrid);
+  c.appendChild(droneSection);
+
+  
+  let waveData = [];
+  if (d.isDefense && d.waveStarts && Object.keys(d.waveStarts).length > 0) {
+  const waves = Object.keys(d.waveStarts).map(Number).sort((a, b) => a - b);
+  let waveEndIdx = 0, waveCountdownIdx = 0;
+
+  for (let i = 0; i < waves.length; i++) {
+    const curr = waves[i];
+    let dur = 0;
+    while (waveEndIdx < d.waveEnds.length && d.waveEnds[waveEndIdx] <= d.waveStarts[curr]) waveEndIdx++;
+    if (curr % 3 === 0) {
+    while (waveCountdownIdx < d.waveCountdowns.length && d.waveCountdowns[waveCountdownIdx] <= d.waveStarts[curr]) waveCountdownIdx++;
+    if (waveCountdownIdx < d.waveCountdowns.length) {
+      dur = (d.waveCountdowns[waveCountdownIdx] - 5) - d.waveStarts[curr];
+      waveCountdownIdx++;
+    } else continue;
+    } else {
+    if (waveEndIdx < d.waveEnds.length) {
+      dur = d.waveEnds[waveEndIdx] - d.waveStarts[curr];
+      waveEndIdx++;
+    } else continue;
+    }
+    if (dur > 0 && dur < 300) waveData.push({ wave: curr, dur });
+  }
+
+  if (waveData.length > 0) {
+    const avgOf = arr => arr.length ? (arr.reduce((s, w) => s + w.dur, 0) / arr.length).toFixed(1) : null;
+    const fastWaves = waveData.filter(w => w.dur <= 25);
+    const slowWaves = waveData.filter(w => w.dur > 25);
+
+    const divider = document.createElement('div');
+    divider.style.cssText = 'border-top:1px solid var(--border);margin:12px 0 10px;';
+    c.appendChild(divider);
+
+    const waveSection = document.createElement('div');
+
+    const waveLabel = document.createElement('div');
+    waveLabel.style.cssText = 'font-size:13px;color:var(--text3);letter-spacing:0.03em;margin-bottom:6px;display:flex;flex-direction:column;gap:2px;';
+    waveLabel.innerHTML = `
+    <span>clear time per wave · downtime excluded</span>
+    <span style="display:flex;gap:18px;font-size:12px;white-space:nowrap;">
+      ${avgOf(fastWaves) !== null ? `<span style="color:rgba(52,208,88,0.75);">≤25 · avg ${avgOf(fastWaves)}s</span>` : ''}
+      ${avgOf(slowWaves) !== null ? `<span style="color:rgba(248,81,73,0.75);">&gt;25 · avg ${avgOf(slowWaves)}s</span>` : ''}
+    </span>
+    `;
+    waveSection.appendChild(waveLabel);
+
+    const waveGrid = document.createElement('div');
+    waveGrid.style.cssText = 'display:flex;flex-wrap:wrap;gap:2px;';
+
+    waveData.forEach(({ wave, dur }) => {
+    const isFast  = dur <= 25;
+    const sym     = isFast ? '≤' : '>';
+    const baseRgb = isFast ? '52,208,88' : '248,81,73';
+    const intensity = isFast ? Math.min(1, (25 - dur) / 20) : Math.min(1, (dur - 25) / 40);
+    const bgOp  = (0.12 + intensity * 0.22).toFixed(2);
+    const bdOp  = (0.3  + intensity * 0.4).toFixed(2);
+    const txtOp = (0.6  + intensity * 0.4).toFixed(2);
+
+    const sq = document.createElement('div');
+    sq.style.cssText = `
+      width:22px;height:22px;border-radius:3px;cursor:default;flex-shrink:0;
+      background:rgba(${baseRgb},${bgOp});border:1px solid rgba(${baseRgb},${bdOp});
+      display:flex;align-items:center;justify-content:center;
+      font-family:var(--mono);font-size:11px;color:rgba(${baseRgb},${txtOp});
+      transition:transform .1s;
+    `;
+    sq.textContent = sym;
+    const label = `wave ${wave} · ${dur.toFixed(1)}s`;
+    sq.addEventListener('mouseenter', e => { sq.style.transform = 'scale(1.45)'; showTip(e, label); });
+    sq.addEventListener('mousemove',  e => showTip(e, label));
+    sq.addEventListener('mouseleave', () => { sq.style.transform = ''; hideTip(); });
+    waveGrid.appendChild(sq);
+    });
+    waveSection.appendChild(waveGrid);
+
+    const legend = document.createElement('div');
+    legend.style.cssText = 'margin-top:7px;display:flex;gap:10px;font-size:12px;color:var(--text3);';
+    legend.innerHTML = `
+    <span style="display:flex;align-items:center;gap:4px;">
+      <span style="width:10px;height:10px;border-radius:2px;background:rgba(52,208,88,0.3);border:1px solid rgba(52,208,88,0.5);display:inline-block;"></span>fast ≤25s
+    </span>
+    <span style="display:flex;align-items:center;gap:4px;">
+      <span style="width:10px;height:10px;border-radius:2px;background:rgba(248,81,73,0.3);border:1px solid rgba(248,81,73,0.5);display:inline-block;"></span>slow &gt;25s
+    </span>`;
+    waveSection.appendChild(legend);
+    c.appendChild(waveSection);
+  }
+  }
+
+  c.addEventListener('mouseleave', hideTip);
+
+  
+  buildDronesDetailPanel(dronesPerRound, waveData, d.isDefense);
+
+  
+  const btnDetail = document.getElementById('btn-drones-detail');
+  if (btnDetail) btnDetail.style.display = 'inline-flex';
+}
+
+function buildDronesDetailPanel(dronesPerRound, waveData, isDefense) {
+  const container = document.getElementById('dronesDetailContent');
+  if (!container) return;
+  container.innerHTML = '';
+
+  container.style.position = 'relative';
+
+  
+  const tip = document.createElement('div');
+  tip.style.cssText = `
+  position:absolute;pointer-events:none;visibility:hidden;z-index:999;
+  background:#1e1e1e;border:1px solid rgba(255,255,255,0.09);
+  border-radius:5px;padding:4px 9px;font-family:var(--mono);
+  font-size:12px;color:var(--text2);white-space:nowrap;
+  `;
+  container.appendChild(tip);
+
+  const showTip = (e, text) => {
+  const rect = container.getBoundingClientRect();
+  tip.textContent = text;
+  tip.style.left = (e.clientX - rect.left + 10) + 'px';
+  tip.style.top  = (e.clientY - rect.top  - 30) + 'px';
+  tip.style.visibility = 'visible';
+  };
+  const hideTip = () => { tip.style.visibility = 'hidden'; };
+  container.addEventListener('mouseleave', hideTip);
+
+  const mx = Math.max(...dronesPerRound), mn = Math.min(...dronesPerRound);
+  const range = mx - mn || 1;
+
+  
+  const droneHeader = document.createElement('div');
+  droneHeader.style.cssText = 'font-size:13px;color:var(--text3);letter-spacing:0.03em;margin-bottom:8px;display:flex;flex-direction:column;gap:2px;';
+  droneHeader.innerHTML = `
+  <span>drone kills per round · red (lowest) → green (highest)</span>
+  <span style="color:var(--text2);font-size:12px;">${dronesPerRound.length} rotations · avg ${(dronesPerRound.reduce((a,b)=>a+b,0)/dronesPerRound.length).toFixed(1)}/r</span>
+  `;
+  container.appendChild(droneHeader);
+
+  const droneGrid = document.createElement('div');
+  droneGrid.className = 'detail-cube-grid';
+
+  dronesPerRound.forEach((v, i) => {
+  const t = (v - mn) / range;
+  const col = lerpColor(t);
+  const bgCol = col.replace('rgb(', 'rgba(').replace(')', ',0.22)');
+  const bdCol = col.replace('rgb(', 'rgba(').replace(')', ',0.50)');
+  const txtCol = col.replace('rgb(', 'rgba(').replace(')', ',0.90)');
+
+  const cube = document.createElement('div');
+  cube.className = 'detail-cube';
+  cube.style.cssText = `background:${bgCol};border:1px solid ${bdCol};color:${txtCol};`;
+  cube.innerHTML = `<span class="detail-cube-lbl">${i + 1}r</span><span class="detail-cube-val">${v}</span>`;
+  const label = `rotation #${i + 1}  ·  ${v} drones`;
+  cube.addEventListener('mouseenter', e => showTip(e, label));
+  cube.addEventListener('mousemove',  e => showTip(e, label));
+  cube.addEventListener('mouseleave', hideTip);
+  droneGrid.appendChild(cube);
+  });
+  container.appendChild(droneGrid);
+
+  
+  if (!isDefense || !waveData || waveData.length === 0) return;
+
+  const divider = document.createElement('div');
+  divider.style.cssText = 'border-top:1px solid var(--border);margin:16px 0 12px;';
+  container.appendChild(divider);
+
+  const fastWaves = waveData.filter(w => w.dur <= 25);
+  const slowWaves = waveData.filter(w => w.dur > 25);
+  const avgOf = arr => arr.length ? (arr.reduce((s, w) => s + w.dur, 0) / arr.length).toFixed(1) : null;
+
+  const waveHeader = document.createElement('div');
+  waveHeader.style.cssText = 'font-size:13px;color:var(--text3);letter-spacing:0.03em;margin-bottom:8px;display:flex;flex-direction:column;gap:2px;';
+  waveHeader.innerHTML = `
+  <span>clear time per wave · downtime excluded</span>
+  <span style="display:flex;gap:18px;font-size:12px;white-space:nowrap;">
+    ${avgOf(fastWaves) !== null ? `<span style="color:rgba(52,208,88,0.75);">≤25 · avg ${avgOf(fastWaves)}s</span>` : ''}
+    ${avgOf(slowWaves) !== null ? `<span style="color:rgba(248,81,73,0.75);">&gt;25 · avg ${avgOf(slowWaves)}s</span>` : ''}
+  </span>
+  `;
+  container.appendChild(waveHeader);
+
+  const waveGrid = document.createElement('div');
+  waveGrid.className = 'detail-cube-grid';
+
+  waveData.forEach(({ wave, dur }) => {
+  const isFast  = dur <= 25;
+  const baseRgb = isFast ? '52,208,88' : '248,81,73';
+  const intensity = isFast ? Math.min(1, (25 - dur) / 20) : Math.min(1, (dur - 25) / 40);
+  const bgOp  = (0.15 + intensity * 0.20).toFixed(2);
+  const bdOp  = (0.35 + intensity * 0.40).toFixed(2);
+  const txtOp = (0.70 + intensity * 0.30).toFixed(2);
+
+  const cube = document.createElement('div');
+  cube.className = 'detail-cube';
+  cube.style.cssText = `
+    background:rgba(${baseRgb},${bgOp});
+    border:1px solid rgba(${baseRgb},${bdOp});
+    color:rgba(${baseRgb},${txtOp});
+  `;
+  cube.innerHTML = `<span class="detail-cube-lbl">w${wave}</span><span class="detail-cube-val">${dur.toFixed(1)}</span>`;
+  const label = `wave ${wave}  ·  ${dur.toFixed(1)}s`;
+  cube.addEventListener('mouseenter', e => showTip(e, label));
+  cube.addEventListener('mousemove',  e => showTip(e, label));
+  cube.addEventListener('mouseleave', hideTip);
+  waveGrid.appendChild(cube);
+  });
+  container.appendChild(waveGrid);
+
+  
+  const legend = document.createElement('div');
+  legend.style.cssText = 'margin-top:9px;display:flex;gap:10px;font-size:12px;color:var(--text3);';
+  legend.innerHTML = `
+  <span style="display:flex;align-items:center;gap:4px;">
+    <span style="width:10px;height:10px;border-radius:2px;background:rgba(52,208,88,0.3);border:1px solid rgba(52,208,88,0.5);display:inline-block;"></span>fast ≤25s
+  </span>
+  <span style="display:flex;align-items:center;gap:4px;">
+    <span style="width:10px;height:10px;border-radius:2px;background:rgba(248,81,73,0.3);border:1px solid rgba(248,81,73,0.5);display:inline-block;"></span>slow &gt;25s
+  </span>`;
+  container.appendChild(legend);
+}
+
+document.getElementById('btn-drones-detail').addEventListener('click', () => {
+  document.getElementById('dpmRotationGrid').style.display = 'none';
+  document.getElementById('dronesDetailPanel').style.display = 'block';
+  
+  requestAnimationFrame(() => {
+  if (runData) renderDPMGraph(runData, 'dpmDetailGraph', 'dpmDetailPanelTitle');
+  });
+});
+document.getElementById('btn-drones-back').addEventListener('click', () => {
+  document.getElementById('dronesDetailPanel').style.display = 'none';
+  document.getElementById('dpmRotationGrid').style.display = '';
+  requestAnimationFrame(() => {
+  if (runData) renderDPMGraph(runData);
+  });
+});
+
+function renderDPMGraph(d, graphId, titleId) {
+  graphId  = graphId  || 'intervalsList';
+  titleId  = titleId  || 'dpmPanelTitle';
+  const graphEl = document.getElementById(graphId);
+  if (!graphEl) return;
+  if (!d.rewardTimestamps || d.rewardTimestamps.length < 2) {
+  graphEl.innerHTML = '<div style="color:var(--text3)">need 2+ rotations for DPM graph</div>';
+  return;
+  }
+
+  let dataPoints = [], dIdx = 0;
+  let st = d.preciseStartTime || d.droneTimestamps[0] || 0;
+  for (let r = 0; r < d.rewardTimestamps.length; r++) {
+  const endT = d.rewardTimestamps[r];
+  let count = 0;
+  while (dIdx < d.droneTimestamps.length && d.droneTimestamps[dIdx] <= endT) { count++; dIdx++; }
+  const durationSec = Math.max(endT - st, 10);
+  dataPoints.push(count / (durationSec / 60));
+  st = endT;
+  }
+
+  
+  const rightPanel = document.getElementById('roundsList');
+  const rightH = rightPanel ? rightPanel.getBoundingClientRect().height : 0;
+  const minH = 215, H = Math.max(minH, rightH > 0 ? rightH : minH);
+  const W = Math.max(240, graphEl.parentElement.clientWidth - 32) || 420;
+  const ml = 50, mr = 50, mt = 22, mb = 32;
+  const gW = W - ml - mr, gH = H - mt - mb;
+
+  const rawMin = Math.min(...dataPoints), rawMax = Math.max(...dataPoints);
+  const pad = (rawMax - rawMin) * 0.15 || 1;
+  const minV = rawMin - pad, maxV = rawMax + pad;
+  const rangeV = maxV - minV;
+  const avgV = dataPoints.reduce((a, b) => a + b, 0) / dataPoints.length;
+  const last = dataPoints.length - 1;
+
+  
+  const hStep = last > 0 ? gW / (last + 1) : 0;
+  const px = i => hStep * 0.5 + (i / Math.max(last, 1)) * (gW - hStep);
+  const py = v => gH - ((v - minV) / rangeV) * gH;
+
+  
+  const pts = dataPoints.map((v, i) => ({ x: px(i), y: py(v) }));
+  const T = 0.25; 
+  let smoothPath = `M${pts[0].x.toFixed(2)},${pts[0].y.toFixed(2)}`;
+  for (let i = 1; i < pts.length; i++) {
+  const cp1x = (pts[i-1].x + T * (pts[i].x - pts[i-1].x)).toFixed(2);
+  const cp2x = (pts[i].x   - T * (pts[i].x - pts[i-1].x)).toFixed(2);
+  smoothPath += ` C${cp1x},${pts[i-1].y.toFixed(2)} ${cp2x},${pts[i].y.toFixed(2)} ${pts[i].x.toFixed(2)},${pts[i].y.toFixed(2)}`;
+  }
+  const areaPath = smoothPath + ` L${pts[last].x.toFixed(2)},${gH} L0,${gH} Z`;
+
+  
+  let grid = '';
+  const tickMin = Math.ceil(rawMin), tickMax = Math.floor(rawMax);
+  const tickRange = tickMax - tickMin;
+  const tickStep = tickRange <= 8 ? 2 : tickRange <= 20 ? 2 : tickRange <= 50 ? 5 : 10;
+  const tickStart = Math.ceil(rawMin / tickStep) * tickStep;
+  for (let v = tickStart; v <= tickMax; v += tickStep) {
+  const y = py(v).toFixed(1);
+  grid += `<line x1="0" y1="${y}" x2="${gW}" y2="${y}" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+       <text x="-10" y="${y}" dy="3.5" text-anchor="end" fill="var(--text3)" font-size="11">${v}</text>`;
+  }
+
+  
+  let xlabels = '';
+  const stride = last > 20 ? 5 : 1;
+  dataPoints.forEach((_, i) => {
+  if (i === 0 || i === last || (i + 1) % stride === 0) {
+    const anchor = i === 0 ? 'start' : i === last ? 'end' : 'middle';
+    xlabels += `<text x="${px(i).toFixed(1)}" y="${gH + 19}" text-anchor="${anchor}" fill="var(--text3)" font-size="11">${i + 1}</text>`;
+  }
+  });
+
+  const avgY = py(avgV).toFixed(1);
+  const uid = 'g' + Math.random().toString(36).slice(2, 8);
+
+  
+  const dots = dataPoints.map((v, i) => {
+  const cx = px(i).toFixed(2), cy = py(v).toFixed(2);
+  return `<circle class="dpm-dot" cx="${cx}" cy="${cy}" r="5"
+    fill="var(--bg2)" stroke="var(--fast)" stroke-width="1.8"
+    data-rot="${i + 1}" data-val="${v.toFixed(2)}"
+    style="cursor:pointer;transition:r .12s,stroke-width .12s"/>`;
+  }).join('');
+
+  
+  const dpmTitle = document.getElementById(titleId);
+  if (dpmTitle) {
+  if (!dpmTitle.querySelector('.avg-badge')) {
+    const badge = document.createElement('span');
+    badge.className = 'avg-badge';
+    badge.style.cssText = `
+    font-size:11px;font-family:var(--mono);font-weight:500;
+    color:#c8860a;background:rgba(240,180,41,0.12);
+    border:1px solid rgba(240,180,41,0.28);
+    border-radius:5px;padding:2px 8px;white-space:nowrap;
+    letter-spacing:0.04em;flex-shrink:0;
+    `;
+    dpmTitle.appendChild(badge);
+  }
+  dpmTitle.querySelector('.avg-badge').textContent = `AVG  ${avgV.toFixed(1)}`;
+  }
+
+  
+  graphEl.innerHTML = `
+  <svg id="${uid}" viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;overflow:visible;font-family:var(--mono)">
+    <defs>
+    <linearGradient id="gr_${uid}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"   stop-color="#34d058" stop-opacity="0.2"/>
+      <stop offset="75%"  stop-color="#34d058" stop-opacity="0.04"/>
+      <stop offset="100%" stop-color="#34d058" stop-opacity="0"/>
+    </linearGradient>
+    </defs>
+    <g transform="translate(${ml},${mt})">
+    ${grid}
+    <path d="${areaPath}" fill="url(#gr_${uid})" stroke="none"/>
+    <line x1="0" y1="${avgY}" x2="${gW}" y2="${avgY}"
+      stroke="var(--warn)" stroke-width="1" stroke-dasharray="5 3" opacity="0.5"/>
+    <path d="${smoothPath}" fill="none" stroke="var(--fast)" stroke-width="2"
+      stroke-linejoin="round" stroke-linecap="round"/>
+    ${dots}
+    ${xlabels}
+    <g id="tip_${uid}" visibility="hidden" pointer-events="none">
+      <rect id="tipBg_${uid}" rx="5" fill="#1e1e1e" stroke="rgba(255,255,255,0.09)" stroke-width="1"/>
+      <text id="tipTxt_${uid}" fill="var(--text2)" font-size="12"></text>
+    </g>
+    </g>
+  </svg>`;
+
+  
+  const svg = document.getElementById(uid);
+  const tip = document.getElementById('tip_' + uid);
+  const bg  = document.getElementById('tipBg_' + uid);
+  const txt = document.getElementById('tipTxt_' + uid);
+
+  svg.querySelectorAll('.dpm-dot').forEach(dot => {
+  dot.addEventListener('mouseenter', function () {
+    this.setAttribute('r', '7');
+    this.setAttribute('stroke-width', '2.2');
+    const cx = parseFloat(this.getAttribute('cx'));
+    const cy = parseFloat(this.getAttribute('cy'));
+    const label = `#${this.dataset.rot} · ${this.dataset.val} dpm`;
+    txt.textContent = label;
+    const tw = label.length * 7.4 + 16, th = 24;
+    let tx = cx + 10, ty = cy - th - 6;
+    if (tx + tw > gW) tx = cx - tw - 10;
+    if (ty < 0) ty = cy + 8;
+    bg.setAttribute('x', tx);  bg.setAttribute('y', ty);
+    bg.setAttribute('width', tw); bg.setAttribute('height', th);
+    txt.setAttribute('x', tx + 8); txt.setAttribute('y', ty + 15.5);
+    tip.setAttribute('visibility', 'visible');
+  });
+  dot.addEventListener('mouseleave', function () {
+    this.setAttribute('r', '5');
+    this.setAttribute('stroke-width', '1.8');
+    tip.setAttribute('visibility', 'hidden');
+  });
+  });
+}
+
+document.getElementById('btn-copy-img').addEventListener('click', async () => {
+  const btn = document.getElementById('btn-copy-img');
+
+  btn.classList.add('loading');
+  btn.textContent = '⧖ capturing...';
+
+  try {
+  const resultsEl = document.getElementById('results');
+  const missionText = document.getElementById('missionName').textContent;
+
+  
+  const clone = resultsEl.cloneNode(true);
+
+  clone.style.paddingBottom = '0';
+  clone.style.paddingTop = '20px';
+  clone.style.paddingLeft = '20px';
+  clone.style.paddingRight = '20px';
+
+  clone.style.width = resultsEl.offsetWidth + 'px';
+  clone.style.height = 'auto';
+
+  clone.style.background = '#0c0c0c';
+
+  
+  clone.querySelector('.actions')?.remove();
+  clone.querySelectorAll('.btn-detail').forEach(el => el.remove());
+
+  
+  const existingBadge = clone.querySelector('#missionBadge');
+  if (existingBadge) existingBadge.remove();
+
+  const missionClean = missionText.trim().replace(/\s+/g, ' ');
+
+  const badge = document.createElement('div');
+
+  badge.style.cssText = `
+    display:table;
+    background:#1e1e1e;
+    border:1px solid rgba(255,255,255,0.09);
+    color:#adadad;
+    font-family:'DM Mono',monospace;
+    font-size:12px;
+    padding:5px 13px;
+    border-radius:20px;
+    margin-bottom:18px;
+    white-space:nowrap;
+    letter-spacing:0.02em;
+  `;
+
+  badge.innerHTML = `
+    <span style="color:#34d058;margin-right:6px">●</span>
+    ${missionClean}
+  `;
+
+  clone.insertBefore(badge, clone.firstChild);
+
+  
+  const vitusInput = clone.querySelector('#actualVitus');
+
+  if (vitusInput) {
+    const box = document.createElement('div');
+
+    box.textContent = vitusInput.value || '0';
+
+    box.style.cssText = `
+    display:inline-block;
+    width:80px;
+    padding:5px 10px;
+    border:1px solid rgba(255,255,255,0.09);
+    border-radius:8px;
+    background:#1e1e1e;
+    font-family:'DM Mono',monospace;
+    font-size:13px;
+    color:#dedede;
+    `;
+
+    vitusInput.parentNode.replaceChild(box, vitusInput);
+  }
+
+  
+  const wm = document.createElement('div');
+
+  wm.style.cssText = `
+    margin-top:16px;
+    padding-top:10px;
+    padding-bottom:16px;
+    border-top:1px solid rgba(255,255,255,0.05);
+    text-align:center;
+    font-size:11px;
+    color:#686868;
+    font-family:'DM Mono',monospace;
+    letter-spacing:0.03em;
+  `;
+
+  wm.textContent = 'ix1le.github.io/arbi_analyzer';
+
+  clone.appendChild(wm);
+
+  
+  
+  
+  
+  try {
+    const fontCssUrl = 'https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&display=swap';
+    const cssResp = await fetch(fontCssUrl);
+    let fontCss = await cssResp.text();
+
+    
+    const urlRe = /url\((https?:\/\/[^)]+)\)/g;
+    const fontUrls = [...fontCss.matchAll(urlRe)].map(m => m[1]);
+
+    for (const fUrl of fontUrls) {
+    try {
+      const fResp = await fetch(fUrl);
+      const buf   = await fResp.arrayBuffer();
+      const b64   = btoa(String.fromCharCode(...new Uint8Array(buf)));
+      const ext   = fUrl.split('.').pop().split('?')[0].toLowerCase();
+      const mime  = ext === 'woff2' ? 'font/woff2' : ext === 'woff' ? 'font/woff' : 'font/truetype';
+      fontCss = fontCss.replace(fUrl, `data:${mime};base64,${b64}`);
+    } catch (_) {  }
+    }
+
+    const fontStyle = document.createElement('style');
+    fontStyle.textContent = fontCss;
+    clone.insertBefore(fontStyle, clone.firstChild);
+  } catch (_) {  }
+
+  
+  const wrap = document.createElement('div');
+
+  wrap.style.position = 'fixed';
+  wrap.style.left = '-99999px';
+  wrap.style.top = '0';
+  wrap.style.zIndex = '-1';
+
+  wrap.appendChild(clone);
+
+  document.body.appendChild(wrap);
+
+  
+  await new Promise(r => requestAnimationFrame(r));
+  await new Promise(r => setTimeout(r, 50));
+
+  
+  const blob = await htmlToImage.toBlob(clone, {
+    cacheBust: true,
+    pixelRatio: 2,
+
+    backgroundColor: '#0c0c0c',
+
+    width: clone.offsetWidth,
+    height: clone.scrollHeight,
+
+    canvasWidth: clone.offsetWidth * 2,
+    canvasHeight: clone.scrollHeight * 2,
+  });
+
+  document.body.removeChild(wrap);
+
+  if (!blob) throw new Error('Failed to create image blob');
+
+  try {
+    await navigator.clipboard.write([
+    new ClipboardItem({
+      'image/png': blob
+    })
+    ]);
+
+    btn.textContent = '✓ copied!';
+  } catch {
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+
+    a.href = url;
+    a.download = 'arbi-run.png';
+
+    a.click();
+
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+    btn.textContent = '✓ saved!';
+  }
+
+  setTimeout(() => {
+    btn.classList.remove('loading');
+    btn.textContent = '⛶ copy image';
+  }, 2200);
+
+  } catch (err) {
+  console.error('Capture failed:', err);
+
+  btn.classList.remove('loading');
+  btn.textContent = '⛶ copy image';
+  }
+});
+
+function resetAll() {
+  runData = null; results.style.display = 'none'; fileInput.value = '';
+  document.getElementById('actualVitus').value = '';
+  setStatus('', 'waiting for file...');
+}
+document.getElementById('btn-reset').addEventListener('click', resetAll);
+document.getElementById('btn-nav-reset').addEventListener('click', resetAll);
+</script>
+</body>
+</html>
